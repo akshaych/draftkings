@@ -133,10 +133,109 @@ class PlayerUpdate:
             player_instance = players[player]
 
             profile_url = player_instance.find({},{'player_link':1}).__getitem__(0)['player_link']
+            try:
+                latest_day = player_instance.find({},{'latest_day':1}).__getitem__(0)['latest_day']
+            except KeyError:
+                latest_day = "None"
+
+            print latest_day
 
             page = requests.get(profile_url)
             soup = BeautifulSoup(page.content, 'html.parser')
-            table = soup.find('table', class_ = 'tablehead').find_all("tr")
+            table = soup.find('table', class_ = 'tablehead').find_all("tr")[1:]
 
             for row in table:
-                print row
+                labels = row.find_all("td")
+                if labels[0].get_text() == 'Last 10 Games':
+                    player_instance.update_one({'name': player}, {'$set': {'mpg': labels[2].get_text()}, "$currentDate":
+                        {'lastModified': True}}, upsert=True)
+
+            gamelog = self.construct_game(profile_url)
+
+            page = requests.get(gamelog)
+            soup = BeautifulSoup(page.content, 'html.parser')
+            table = soup.find('table', class_= 'tablehead').find_all("tr")[1:]
+
+            should_update = False
+
+            for row in table:
+                labels = row.find_all("td")
+                if "/" in labels[0].get_text():
+                    current_day = labels[0].get_text().split(' ')[1]
+                    if current_day.split('/')[0] == '10':
+                        break
+                    # repeating code
+                    if latest_day == "None":
+                        fgm = labels[4].get_text().split("-")[0]
+                        ftm = labels[8].get_text().split("-")[0]
+                        tpm = labels[6].get_text().split('-')[0]
+
+                        player_instance.update_one({'name': player},
+                                                   {'$set': {'stats.'+current_day+'.fgm': fgm,
+                                                             'stats.'+current_day+'.ftm': ftm,
+                                                             'stats.'+current_day+'.tpm': tpm,
+                                                             'stats.'+current_day+'.rebounds': labels[10].get_text(),
+                                                             'stats.'+current_day+'.assists': labels[11].get_text(),
+                                                             'stats.'+current_day+'.blocks': labels[12].get_text(),
+                                                             'stats.'+current_day+'.steals': labels[13].get_text(),
+                                                             'stats.'+current_day+'.turnovers': labels[15].get_text(),
+                                                             'stats.'+current_day+'.points': labels[16].get_text()
+                                                    },
+                                                    }, upsert=True)
+
+                        if not should_update:
+                            should_update = True
+                            update_day = current_day
+
+                    else:
+                        if self.compare_dates(current_day, latest_day):
+                            fgm = labels[4].get_text().split("-")[0]
+                            ftm = labels[8].get_text().split("-")[0]
+                            tpm = labels[6].get_text().split('-')[0]
+
+                            player_instance.update_one({'name': player},
+                                                       {'$set': {'stats.' + current_day + '.fgm': fgm,
+                                                                 'stats.' + current_day + '.ftm': ftm,
+                                                                 'stats.' + current_day + '.tpm': tpm,
+                                                                 'stats.' + current_day + '.rebounds': labels[
+                                                                     10].get_text(),
+                                                                 'stats.' + current_day + '.assists': labels[
+                                                                     11].get_text(),
+                                                                 'stats.' + current_day + '.blocks': labels[
+                                                                     12].get_text(),
+                                                                 'stats.' + current_day + '.steals': labels[
+                                                                     13].get_text(),
+                                                                 'stats.' + current_day + '.turnovers': labels[
+                                                                     15].get_text(),
+                                                                 'stats.' + current_day + '.points': labels[
+                                                                     16].get_text()
+                                                                 },
+                                                        }, upsert=True)
+                            if not should_update:
+                                should_update = True
+                                update_day = current_day
+
+            if should_update:
+                player_instance.update_one({'name': player}, {'$set': {'latest_day':update_day}}, upsert=True)
+
+
+    def construct_game(self, url):
+        split_urls = url.split('player/')
+        return split_urls[0] + 'player/gamelog/' + split_urls[1]
+
+    def day_score(self, day):
+        month, day = day.split('/')
+        month = int(month)
+        day = int(day)
+        if month > 10:
+            score = (month - 10) * 31
+            score += day
+        else:
+            score = (month + 2) * 31
+            score += day
+
+        return score
+
+    def compare_dates(self, current_day, latest_day):
+        return self.day_score(current_day) > self.day_score(latest_day)
+

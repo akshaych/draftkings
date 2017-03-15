@@ -1,7 +1,7 @@
 import update
 
-#test = update.TeamUpdate([])
+#test = update.TeamUpdate(['Hou'])
 #test.update_teams()
 
-test2 = update.PlayerUpdate(['JamesHarden'])
+test2 = update.PlayerUpdate(['JaylenBrown'])
 test2.update_player()
