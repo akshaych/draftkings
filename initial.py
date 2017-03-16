@@ -11,7 +11,7 @@ class Initialize():
 
     # get url, eventually dynamically find
     def retrieve_url(self):
-        self.url = "https://www.draftkings.com/lineup/getavailableplayers?draftGroupId=12551"
+        self.url = "https://www.draftkings.com/lineup/getavailableplayers?draftGroupId=12763"
         return
 
     #assign players to teams
@@ -77,6 +77,19 @@ class Initialize():
                 if row['fnu'] == 'Stephen' and row['lnu'] == 'Zimmerman Jr.':
                     result = soup.find("a", text = 'Stephen Zimmerman')
 
+                if row['lnu'] == 'McCollum':
+                    result = soup.find("a", text = 'CJ McCollum')
+
+                if row['lnu'] == 'Warren' and row['fnu'] == 'T.J.':
+                    result = soup.find('a', text = 'TJ Warren')
+
+                if row['lnu'] == 'Ennis III':
+                    result = soup.find('a', text = 'James Ennis')
+
+                if row['fnu'] == 'Hollis':
+                    team = 'NO'
+                    player_link = 'http://www.espn.com/nba/player/_/id/6634/hollis-thompson'
+
                 if result:
                     team = poss_team
                     player_link = result['href']
@@ -92,8 +105,6 @@ class Initialize():
 
             #add teams to team list
             if team not in team_list:
-                print team
-                print name
                 team_list.append(team)
 
             # get possible positions of player

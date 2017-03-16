@@ -130,15 +130,14 @@ class PlayerUpdate:
         players = client['players']
 
         for player in self.player_list:
+
             player_instance = players[player]
 
-            profile_url = player_instance.find({},{'player_link':1}).__getitem__(0)['player_link']
+            profile_url = player_instance.find({}, {'player_link':1}).__getitem__(0)['player_link']
             try:
-                latest_day = player_instance.find({},{'latest_day':1}).__getitem__(0)['latest_day']
+                latest_day = player_instance.find({}, {'latest_day':1}).__getitem__(0)['latest_day']
             except KeyError:
                 latest_day = "None"
-
-            print latest_day
 
             page = requests.get(profile_url)
             soup = BeautifulSoup(page.content, 'html.parser')
@@ -164,8 +163,8 @@ class PlayerUpdate:
                     current_day = labels[0].get_text().split(' ')[1]
                     if current_day.split('/')[0] == '10':
                         break
-                    # repeating code
-                    if latest_day == "None":
+                    if latest_day == "None" or self.compare_dates(current_day, latest_day):
+
                         fgm = labels[4].get_text().split("-")[0]
                         ftm = labels[8].get_text().split("-")[0]
                         tpm = labels[6].get_text().split('-')[0]
@@ -187,36 +186,10 @@ class PlayerUpdate:
                             should_update = True
                             update_day = current_day
 
-                    else:
-                        if self.compare_dates(current_day, latest_day):
-                            fgm = labels[4].get_text().split("-")[0]
-                            ftm = labels[8].get_text().split("-")[0]
-                            tpm = labels[6].get_text().split('-')[0]
-
-                            player_instance.update_one({'name': player},
-                                                       {'$set': {'stats.' + current_day + '.fgm': fgm,
-                                                                 'stats.' + current_day + '.ftm': ftm,
-                                                                 'stats.' + current_day + '.tpm': tpm,
-                                                                 'stats.' + current_day + '.rebounds': labels[
-                                                                     10].get_text(),
-                                                                 'stats.' + current_day + '.assists': labels[
-                                                                     11].get_text(),
-                                                                 'stats.' + current_day + '.blocks': labels[
-                                                                     12].get_text(),
-                                                                 'stats.' + current_day + '.steals': labels[
-                                                                     13].get_text(),
-                                                                 'stats.' + current_day + '.turnovers': labels[
-                                                                     15].get_text(),
-                                                                 'stats.' + current_day + '.points': labels[
-                                                                     16].get_text()
-                                                                 },
-                                                        }, upsert=True)
-                            if not should_update:
-                                should_update = True
-                                update_day = current_day
-
             if should_update:
-                player_instance.update_one({'name': player}, {'$set': {'latest_day':update_day}}, upsert=True)
+                player_instance.update_one({'name': player}, {'$set': {'latest_day': update_day}}, upsert=True)
+
+        client.close()
 
 
     def construct_game(self, url):
