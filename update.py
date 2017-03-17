@@ -133,9 +133,9 @@ class PlayerUpdate:
 
             player_instance = players[player]
 
-            profile_url = player_instance.find({}, {'player_link':1}).__getitem__(0)['player_link']
+            profile_url = player_instance.find()[0]['player_link']
             try:
-                latest_day = player_instance.find({}, {'latest_day':1}).__getitem__(0)['latest_day']
+                latest_day = player_instance.find()[0]['latest_day']
             except KeyError:
                 latest_day = "None"
 
@@ -165,6 +165,15 @@ class PlayerUpdate:
                         break
                     if latest_day == "None" or self.compare_dates(current_day, latest_day):
 
+                        home = False
+                        played_team = labels[1].get_text()
+
+                        if 'vs' in played_team:
+                            home = True
+                            team = played_team[2:]
+                        else:
+                            team = played_team[1:]
+
                         fgm = labels[4].get_text().split("-")[0]
                         ftm = labels[8].get_text().split("-")[0]
                         tpm = labels[6].get_text().split('-')[0]
@@ -178,7 +187,10 @@ class PlayerUpdate:
                                                              'stats.'+current_day+'.blocks': labels[12].get_text(),
                                                              'stats.'+current_day+'.steals': labels[13].get_text(),
                                                              'stats.'+current_day+'.turnovers': labels[15].get_text(),
-                                                             'stats.'+current_day+'.points': labels[16].get_text()
+                                                             'stats.'+current_day+'.points': labels[16].get_text(),
+                                                             'stats.'+current_day+'.home': home,
+                                                             'stats.'+current_day+'.team': team,
+                                                             'stats.'+current_day+'.min': labels[3].get_text()
                                                     },
                                                     }, upsert=True)
 

@@ -11,7 +11,7 @@ class Initialize():
 
     # get url, eventually dynamically find
     def retrieve_url(self):
-        self.url = "https://www.draftkings.com/lineup/getavailableplayers?draftGroupId=12763"
+        self.url = "https://www.draftkings.com/lineup/getavailableplayers?draftGroupId=12600"
         return
 
     #assign players to teams
@@ -46,6 +46,7 @@ class Initialize():
                 both_teams[0] = 'Utah'
             elif row['atabbr'] == 'Uta':
                 both_teams[1] = 'Utah'
+
 
             # get team and player urls for further data collection
             for poss_team in both_teams:
@@ -90,6 +91,9 @@ class Initialize():
                     team = 'NO'
                     player_link = 'http://www.espn.com/nba/player/_/id/6634/hollis-thompson'
 
+                if row['fnu'] == 'T.J.' and row['lnu'] == 'McConnell':
+                    result = soup.find('a', text = 'TJ McConnell')
+
                 if result:
                     team = poss_team
                     player_link = result['href']
@@ -119,14 +123,18 @@ class Initialize():
                 out = True
 
             teams = client['teams']
-            team_instance = teams[team]
 
-            team_instance.update_one({'team': team}, {'$addToSet': {'players.' + pos1: name},
-                                                      "$currentDate": {"lastModified": True}}, upsert=True)
+            try:
+                team_instance = teams[team]
+            except:
+                print name
+
+            team_instance.update_one({'team': team.upper()}, {'$addToSet': {'players.' + pos1: name},
+                                                     "$currentDate": {"lastModified": True}}, upsert=True)
 
             if pos2 != 'None':
-                team_instance.update_one({'team': team}, {'$addToSet': {'players.' + pos2: name},
-                                                          "$currentDate": {"lastModified": True}}, upsert=True)
+               team_instance.update_one({'team': team.upper()}, {'$addToSet': {'players.' + pos2: name},
+                                                         "$currentDate": {"lastModified": True}}, upsert=True)
 
             rslt = player_instance.update_one({"name":name},
                                               {"$set":{"team":team, "opp_team":opp_team, "salary":row['s'],
