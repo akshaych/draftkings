@@ -133,6 +133,7 @@ class PlayerUpdate:
         for player in self.player_list:
 
             player_instance = players[player]
+            mpg = False
 
             profile_url = player_instance.find()[0]['player_link']
             try:
@@ -149,6 +150,11 @@ class PlayerUpdate:
                 if labels[0].get_text() == 'Last 10 Games' or labels[0].get_text() == 'Previous 10 Games':
                     player_instance.update_one({'name': player}, {'$set': {'mpg': labels[2].get_text()}, "$currentDate":
                         {'lastModified': True}}, upsert=True)
+                    mpg = True
+
+            if not mpg:
+                player_instance.update_one({'name': player}, {'$set': {'mpg': 0}, "$currentDate":
+                    {'lastModified': True}}, upsert=True)
 
             gamelog = self.construct_game(profile_url)
 

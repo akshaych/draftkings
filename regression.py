@@ -10,7 +10,6 @@ class Projection:
         self.client = MongoClient()
         self.player_instance = self.client['players'][player]
         self.teams = self.client['teams']
-        print self.player
 
     def determine_list(self, stat):
         if stat == 'points':
@@ -35,7 +34,10 @@ class Projection:
         features = self.determine_list(stat)
 
         is_home = self.player_instance.find()[0]['home']
-        mpg = self.player_instance.find()[0]['mpg']
+        try:
+            mpg = self.player_instance.find()[0]['mpg']
+        except KeyError:
+            return 0
         position = self.player_instance.find()[0]['pos1']
 
         data = []
@@ -45,6 +47,8 @@ class Projection:
             if is_home == self.player_data[key]['home']:
 
                 mins = self.player_data[key]['min']
+                if mins == '0':
+                    continue
                 team = self.player_data[key]['team'].strip()
 
                 if team not in ['GS', 'LAL', 'LAC', 'NO', 'NY', 'SA']:
