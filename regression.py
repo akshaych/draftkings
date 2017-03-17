@@ -1,6 +1,6 @@
 from sklearn import linear_model
 from pymongo import MongoClient
-import csv
+import matplotlib.pyplot as plt
 
 class Projection:
 
@@ -10,66 +10,94 @@ class Projection:
         self.client = MongoClient()
         self.player_instance = self.client['players'][player]
         self.teams = self.client['teams']
+        print self.player
+
+    def determine_list(self, stat):
+        if stat == 'points':
+            features = ['opp_points', 'fg', 'ft', 'threes']
+        elif stat == 'rebounds':
+            features = ['opp_rebounds', 'off_reb_pct', 'def_reb_pct', 'fg_missed']
+        elif stat == 'assists':
+            features = ['opp_assists', 'ast_pos']
+        elif stat == 'steals':
+            features = ['opp_steals', 'stl_pct']
+        elif stat == 'blocks':
+            features = ['opp_blocks', 'block_pct']
+        elif stat == 'tpm':
+            features = ['opp_threes', 'pct_from_threes', 'threes']
+        elif stat == 'turnovers':
+            features = ['opp_tos', 'to_pos']
+        return features
 
 
-    def project_points(self):
+    def project(self, stat):
 
-        #check if home or away
+        features = self.determine_list(stat)
+
         is_home = self.player_instance.find()[0]['home']
         mpg = self.player_instance.find()[0]['mpg']
         position = self.player_instance.find()[0]['pos1']
 
-        print is_home, mpg, position
-
-        points_data = []
-        points_value = []
+        data = []
+        value = []
 
         for key in self.player_data:
             if is_home == self.player_data[key]['home']:
 
                 mins = self.player_data[key]['min']
-                # ftm = self.player_data[key]['ftm']
-                # fgm = self.player_data[key]['fgm']
-                # tpm = self.player_data[key]['tpm']
+                team = self.player_data[key]['team'].strip()
 
-                team = self.player_data[key]['team']
+                if team not in ['GS', 'LAL', 'LAC', 'NO', 'NY', 'SA']:
+                    team = team.title()
+
+                #print key, team
+
+                if team == 'Phx':
+                    team = 'Pho'
+
+                if team == 'Wsh':
+                    team = 'Was'
+
                 team_instance = self.teams[team]
 
-                points_allowed = team_instance.find()[0]['positionstats'][position]['opp_points']
-
                 if is_home:
-                    team_data = team_instance.find()[0]['away']
+                    try:
+                        team_data = team_instance.find()[0]['away']
+                    except IndexError:
+                        continue
                 else:
-                    team_data = team_instance.find()[0]['home']
+                    try:
+                        team_data = team_instance.find()[0]['home']
+                    except IndexError:
+                        continue
 
-                opp_fg = team_data['fg']
-                opp_ft = team_data['ft']
-                opp_three = team_data['threes']
-                pace = team_data['possessions']
-                points = self.player_data[key]['points']
+                temp_list = []
+                temp_list.append(float(mins))
+                temp_list.append(float(team_data['possessions']))
+                temp_list.append(float(team_instance.find()[0]['positionstats'][position][features[0]]))
 
-                points_data.append([mins, points_allowed, opp_fg, opp_ft, opp_three, pace])
-                points_value.append(points)
+                for i in range(1, len(features)):
+                    temp_list.append(float(team_data[features[i]]))
+
+                data.append(temp_list)
+                value.append(float(self.player_data[key][stat]))
 
         regr = linear_model.LinearRegression()
-        regr.fit()
+        regr.fit(data, value)
 
         current_team = self.player_instance.find()[0]['opp_team']
         team_instance = self.teams[current_team]
 
-        points_allowed = team_instance.find()[0]['positionstats'][position]['opp_points']
+        predict_list = []
+        predict_list.append(float(mins))
+        predict_list.append(float(team_data['possessions']))
+        predict_list.append(float(team_instance.find()[0]['positionstats'][position][features[0]]))
 
-        if is_home:
-            team_data = team_instance.find()[0]['away']
-        else:
-            team_data = team_instance.find()[0]['home']
+        for i in range(1, len(features)):
+            predict_list.append(float(team_data[features[i]]))
 
-        opp_fg = team_data['fg']
-        opp_ft = team_data['ft']
-        opp_three = team_data['threes']
-        pace = team_data['possessions']
+        return regr.predict([predict_list])[0]
 
-        return regr.predict([[mpg, points_allowed, opp_fg, opp_ft, opp_three, pace]])
-
-
+    def close(self):
+        self.client.close()
 

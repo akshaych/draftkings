@@ -119,7 +119,7 @@ class Initialize():
                 pos1 = row['pn']
                 pos2 = 'None'
 
-            if row['i'] == "Out":
+            if row['i'] == "Out" or row['i'] == "O":
                 out = True
 
             teams = client['teams']
@@ -129,11 +129,11 @@ class Initialize():
             except:
                 print name
 
-            team_instance.update_one({'team': team.upper()}, {'$addToSet': {'players.' + pos1: name},
+            team_instance.update_one({'team': team}, {'$addToSet': {'players.' + pos1: name},
                                                      "$currentDate": {"lastModified": True}}, upsert=True)
 
             if pos2 != 'None':
-               team_instance.update_one({'team': team.upper()}, {'$addToSet': {'players.' + pos2: name},
+               team_instance.update_one({'team': team}, {'$addToSet': {'players.' + pos2: name},
                                                          "$currentDate": {"lastModified": True}}, upsert=True)
 
             rslt = player_instance.update_one({"name":name},

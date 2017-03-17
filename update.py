@@ -88,8 +88,9 @@ class TeamUpdate:
                             home_value = float(self.threecount_home[team]) - float(home_value)
 
                         if url == 'https://www.teamrankings.com/nba/stat/opponent-assists-per-possession':
-                            away_value = away_value[2] + '.' + away_value[3] + away_value[4]
-                            home_value = home_value[2] + '.' + home_value[3] + home_value[4]
+                            print 'here'
+                            away_value = away_value[2] + away_value[3] + '.' + away_value[4]
+                            home_value = home_value[2] + home_value[3] + '.' + home_value[4]
 
                         team_instance.update_one({'team':team}, {'$set': {'away.' + keys[count]: away_value},
                                                  "$currentDate": {"lastModified": True}}, upsert = True)
@@ -145,7 +146,7 @@ class PlayerUpdate:
 
             for row in table:
                 labels = row.find_all("td")
-                if labels[0].get_text() == 'Last 10 Games':
+                if labels[0].get_text() == 'Last 10 Games' or labels[0].get_text() == 'Previous 10 Games':
                     player_instance.update_one({'name': player}, {'$set': {'mpg': labels[2].get_text()}, "$currentDate":
                         {'lastModified': True}}, upsert=True)
 
@@ -173,6 +174,12 @@ class PlayerUpdate:
                             team = played_team[2:]
                         else:
                             team = played_team[1:]
+
+                        if team == 'Phx':
+                            team = 'Pho'
+
+                        if team == 'Wsh':
+                            team = 'Was'
 
                         fgm = labels[4].get_text().split("-")[0]
                         ftm = labels[8].get_text().split("-")[0]

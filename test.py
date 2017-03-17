@@ -16,8 +16,13 @@ for player in ['JaylenBrown']:
     player_instance = players[player]
     player_data = player_instance.find()[0]['stats']
     projection = regression.Projection(player_data, player)
-    projected_points = projection.project_points()
-    print projected_points
+    print projection.project('points')
+    print projection.project('rebounds')
+    print projection.project('assists')
+    print projection.project('steals')
+    print projection.project('blocks')
+    print projection.project('tpm')
+    print projection.project('turnovers')
 
 client.close()
 
