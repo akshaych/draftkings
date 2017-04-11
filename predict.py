@@ -4,6 +4,8 @@ import regression
 import csv
 from operator import itemgetter
 from pymongo import MongoClient
+from twilio.rest import Client
+import operator
 
 init = initial.Initialize()
 init.retrieve_url()
@@ -57,9 +59,32 @@ for player in player_list:
 
 projected_players = sorted(projected_players, key = itemgetter(1), reverse=True)
 
+message = ""
+
 client.close()
 with open('projections.csv', 'w') as csvfile:
     for projection in projected_players:
-        fieldnames = ['player', 'projection', 'salary']
+        fieldnames = ['player', 'projection', 'salary', 'value']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writerow({'player':projection[0], 'projection':projection[1], 'salary':projection[2]})
+        writer.writerow({'player':projection[0], 'projection':projection[1], 'salary':projection[2], ''
+                                                                                                     'value': projection[1] / projection[2]})
+
+reader = csv.reader(open("files.csv"), delimiter=",")
+sortedlist = sorted(reader, key=operator.itemgetter(3), reverse=True)
+
+
+for i in range(0, 15):
+    message = message + " " + sortedlist[i][0]
+
+account_sid = "ACaa446eaf63a0b41917e88f80edbfee18"
+#replaced for privacy
+auth_token = "///////////////////////////"
+
+client = Client(account_sid, auth_token)
+
+#send out final output to people who want the results
+final_message =  client.messages.create(
+    to="+14089665979",
+    from_="+14089665979",
+    body=message)
+
