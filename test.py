@@ -12,7 +12,7 @@ from pymongo import MongoClient
 client = MongoClient()
 players = client['players']
 
-for player in ["NickYoung"]:
+for player in ["DirkNowitzki"]:
     player_instance = players[player]
     player_data = player_instance.find()[0]['stats']
     projection = regression.Projection(player_data, player)

@@ -3,7 +3,7 @@ import requests
 import sys
 from pymongo import MongoClient
 
-class Initialize():
+class Initialize:
 
     def __init__(self):
         reload(sys)
